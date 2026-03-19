@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Brasa & Pizza</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#D4AF37;--red:#9B1B1B;--red-dark:#6B0E0E;--black:#0A0A0A;--dark:#111111;--dark2:#1A1A1A;--dark3:#252525;--gray:#888;--gray-light:#bbb;--white:#FAFAFA;--sidebar:240px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;}
+
+/* ─── LOGIN ─────────────────────────────────────────────────────────────────── */
+#login-screen{
+  position:fixed;inset:0;background:var(--black);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;
+}
+.login-box{
+  background:var(--dark2);border:1px solid rgba(212,175,55,0.2);
+  border-radius:24px;padding:48px 40px;width:min(400px,90vw);text-align:center;
+}
+.login-logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;
+  background:linear-gradient(90deg,var(--red),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:6px;}
+.login-sub{font-size:12px;color:var(--gray);letter-spacing:2px;text-transform:uppercase;margin-bottom:36px;}
+.login-input{
+  width:100%;padding:14px 16px;margin-bottom:12px;
+  background:var(--dark3);border:1px solid rgba(255,255,255,0.1);border-radius:12px;
+  color:white;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;
+  transition:border-color 0.2s;
+}
+.login-input:focus{border-color:var(--gold);}
+.login-btn{
+  width:100%;padding:15px;
+  background:linear-gradient(135deg,var(--red),var(--red-dark));
+  border:none;border-radius:12px;color:white;
+  font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;margin-top:8px;
+}
+.login-btn:hover{box-shadow:0 6px 20px rgba(155,27,27,0.5);}
+.login-error{color:#ef4444;font-size:13px;margin-top:12px;display:none;}
+
+/* ─── SIDEBAR ────────────────────────────────────────────────────────────────── */
+#sidebar{
+  width:var(--sidebar);min-height:100vh;
+  background:var(--dark);border-right:1px solid rgba(255,255,255,0.06);
+  display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;
+  z-index:50;transition:transform 0.3s;
+}
+.sidebar-logo{
+  padding:24px 20px;border-bottom:1px solid rgba(255,255,255,0.06);
+  font-family:'Playfair Display',serif;font-size:18px;font-weight:900;
+  background:linear-gradient(90deg,var(--gold),#F0D060);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.sidebar-sub{font-size:10px;color:var(--gray);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 20px;margin:2px 8px;border-radius:10px;
+  color:var(--gray-light);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all 0.2s;text-decoration:none;
+}
+.nav-item:hover{background:var(--dark2);color:white;}
+.nav-item.active{background:rgba(155,27,27,0.2);color:var(--red);border:1px solid rgba(155,27,27,0.3);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.sidebar-bottom{margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,0.06);}
+.logout-btn{
+  width:100%;padding:10px;border-radius:10px;
+  background:transparent;border:1px solid rgba(255,255,255,0.1);
+  color:var(--gray);font-family:'DM Sans',sans-serif;font-size:13px;
+  cursor:pointer;transition:all 0.2s;
+}
+.logout-btn:hover{border-color:#ef4444;color:#ef4444;}
+
+/* ─── MAIN ──────────────────────────────────────────────────────────────────── */
+#admin-main{
+  margin-left:var(--sidebar);flex:1;
+  min-height:100vh;display:flex;flex-direction:column;
+}
+.topbar{
+  background:rgba(10,10,10,0.95);backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  padding:0 28px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:40;
+}
+.topbar-title{font-family:'Playfair Display',serif;font-size:18px;}
+.view-site-btn{
+  padding:8px 16px;border-radius:10px;
+  background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);
+  color:var(--gold);font-family:'DM Sans',sans-serif;font-size:12px;
+  cursor:pointer;text-decoration:none;transition:all 0.2s;
+}
+.view-site-btn:hover{background:rgba(212,175,55,0.2);}
+.page-content{padding:28px;flex:1;}
+
+/* ─── CARDS/STATS ─────────────────────────────────────────────────────────────*/
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:32px;}
+.stat-card{
+  background:var(--dark2);border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;padding:20px;
+}
+.stat-icon{font-size:24px;margin-bottom:10px;}
+.stat-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);}
+.stat-label{font-size:12px;color:var(--gray);margin-top:4px;}
+
+/* ─── TABLES ──────────────────────────────────────────────────────────────────*/
+.section-card{
+  background:var(--dark2);border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;overflow:hidden;margin-bottom:24px;
+}
+.section-head{
+  padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.section-head h3{font-size:15px;font-weight:600;}
+.btn-primary{
+  padding:8px 16px;border-radius:10px;
+  background:var(--red);border:none;color:white;
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+  cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary:hover{background:var(--red-dark);}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px;}
+.btn-danger{background:#7f1d1d;border:none;}
+.btn-danger:hover{background:#991b1b;}
+.btn-secondary{background:var(--dark3);border:1px solid rgba(255,255,255,0.1);}
+.btn-secondary:hover{border-color:var(--gold);}
+
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray);border-bottom:1px solid rgba(255,255,255,0.06);}
+td{padding:12px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-green{background:rgba(34,197,94,0.15);color:#4ade80;}
+.badge-red{background:rgba(239,68,68,0.15);color:#f87171;}
+.badge-gold{background:rgba(212,175,55,0.15);color:var(--gold);}
+
+/* ─── MODAL ──────────────────────────────────────────────────────────────────── */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,0.8);
+  z-index:200;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 0.3s;padding:20px;
+}
+.modal-backdrop.open{opacity:1;pointer-events:all;}
+.modal-box{
+  background:var(--dark2);border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px;width:min(520px,100%);max-height:90vh;overflow-y:auto;
+  padding:28px;
+  transform:translateY(20px);transition:transform 0.3s;
+}
+.modal-backdrop.open .modal-box{transform:translateY(0);}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:24px;}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray);margin-bottom:6px;}
+.form-input,.form-select,.form-textarea{
+  width:100%;padding:12px 14px;
+  background:var(--dark3);border:1px solid rgba(255,255,255,0.1);border-radius:10px;
+  color:white;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;
+  transition:border-color 0.2s;-webkit-appearance:none;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold);}
+.form-textarea{resize:vertical;min-height:80px;}
+.form-select option{background:var(--dark3);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-footer{display:flex;gap:12px;justify-content:flex-end;margin-top:24px;}
+.toggle-wrap{display:flex;align-items:center;gap:10px;}
+.toggle{
+  width:44px;height:24px;border-radius:12px;
+  background:var(--dark3);border:1px solid rgba(255,255,255,0.1);
+  cursor:pointer;position:relative;transition:background 0.2s;
+  flex-shrink:0;
+}
+.toggle.on{background:var(--red);}
+.toggle-knob{
+  position:absolute;top:2px;left:2px;
+  width:18px;height:18px;border-radius:50%;background:white;
+  transition:left 0.2s;
+}
+.toggle.on .toggle-knob{left:22px;}
+.img-preview{width:80px;height:80px;border-radius:10px;object-fit:cover;margin-top:8px;display:none;}
+
+/* ─── SETTINGS ───────────────────────────────────────────────────────────────── */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+
+/* ─── ORDERS ────────────────────────────────────────────────────────────────── */
+.order-items{font-size:12px;color:var(--gray);max-width:200px;}
+
+/* ─── MOBILE ─────────────────────────────────────────────────────────────────── */
+.menu-toggle{display:none;background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:8px;}
+@media(max-width:768px){
+  #sidebar{transform:translateX(-100%);}
+  #sidebar.open{transform:translateX(0);}
+  #admin-main{margin-left:0;}
+  .topbar{padding:0 16px;}
+  .page-content{padding:16px;}
+  .form-row{grid-template-columns:1fr;}
+  .menu-toggle{display:block;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🔥 Brasa & Pizza</div>
+    <div class="login-sub">Painel Administrativo</div>
+    <input class="login-input" id="login-email" type="email" placeholder="E-mail" value="admin@brasa.com">
+    <input class="login-input" id="login-pass" type="password" placeholder="Senha" value="admin123">
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Credenciais inválidas</div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    Brasa & Pizza
+    <div class="sidebar-sub">Admin</div>
+  </div>
+  <div style="padding:12px 0;flex:1;">
+    <a class="nav-item active" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+    <a class="nav-item" onclick="showPage('products',this)">
+      <span class="nav-icon">🍽️</span> Produtos
+    </a>
+    <a class="nav-item" onclick="showPage('categories',this)">
+      <span class="nav-icon">📂</span> Categorias
+    </a>
+    <a class="nav-item" onclick="showPage('banners',this)">
+      <span class="nav-icon">🎯</span> Banners
+    </a>
+    <a class="nav-item" onclick="showPage('orders',this)">
+      <span class="nav-icon">📋</span> Pedidos
+    </a>
+    <a class="nav-item" onclick="showPage('settings',this)">
+      <span class="nav-icon">⚙️</span> Configurações
+    </a>
+  </div>
+  <div class="sidebar-bottom">
+    <button class="logout-btn" onclick="logout()">🚪 Sair</button>
+  </div>
+</nav>
+
+<!-- Main -->
+<div id="admin-main" style="display:none">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <span class="topbar-title" id="page-title">Dashboard</span>
+    </div>
+    <a href="/" target="_blank" class="view-site-btn">🌐 Ver Site</a>
+  </div>
+  <div class="page-content" id="page-content"></div>
+</div>
+
+<!-- Generic Modal -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModalBackdrop(event)">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script>
+let token = localStorage.getItem('admin_token');
+let currentPage = 'dashboard';
+let editingId = null;
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    const res = await api('/auth/login', 'POST', { email, password: pass }, false);
+    token = res.token;
+    localStorage.setItem('admin_token', token);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-main').style.display = 'flex';
+    document.getElementById('admin-main').style.flexDirection = 'column';
+    showPage('dashboard', document.querySelector('.nav-item'));
+  } catch {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  token = null;
+  location.reload();
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function api(path, method = 'GET', body = null, auth = true) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (auth) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body && !(body instanceof FormData)) opts.body = JSON.stringify(body);
+  if (body instanceof FormData) { delete opts.headers['Content-Type']; opts.body = body; }
+  const res = await fetch('/api' + path, opts);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+function showPage(page, el) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('page-title').textContent = {
+    dashboard:'Dashboard', products:'Produtos', categories:'Categorias',
+    banners:'Banners', orders:'Pedidos', settings:'Configurações'
+  }[page];
+  const titles = { dashboard:'📊 Dashboard', products:'🍽️ Produtos', categories:'📂 Categorias',
+    banners:'🎯 Banners', orders:'📋 Pedidos', settings:'⚙️ Configurações' };
+  document.getElementById('page-title').textContent = titles[page];
+  pages[page]();
+  if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function openModal(html) {
+  document.getElementById('modal-box').innerHTML = html;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  editingId = null;
+}
+function closeModalBackdrop(e) {
+  if (e.target === document.getElementById('modal-backdrop')) closeModal();
+}
+
+// ─── PAGES ───────────────────────────────────────────────────────────────────
+const pages = {
+
+  // DASHBOARD
+  dashboard: async () => {
+    const [products, orders, categories, banners] = await Promise.all([
+      api('/admin/products'), api('/admin/orders'),
+      api('/admin/categories'), api('/admin/banners')
+    ]);
+    const todayOrders = orders.filter(o => o.created_at && o.created_at.startsWith(new Date().toISOString().slice(0,10)));
+    const todayTotal = todayOrders.reduce((a, o) => a + (o.total || 0), 0);
+
+    document.getElementById('page-content').innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">🍽️</div><div class="stat-value">${products.length}</div><div class="stat-label">Produtos</div></div>
+        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value">${orders.length}</div><div class="stat-label">Pedidos Total</div></div>
+        <div class="stat-card"><div class="stat-icon">🚀</div><div class="stat-value">${todayOrders.length}</div><div class="stat-label">Pedidos Hoje</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">R$${todayTotal.toFixed(2).replace('.',',')}</div><div class="stat-label">Faturamento Hoje</div></div>
+      </div>
+      <div class="section-card">
+        <div class="section-head"><h3>📋 Últimos Pedidos</h3></div>
+        <table>
+          <thead><tr><th>Cliente</th><th>Telefone</th><th>Total</th><th>Tipo</th><th>Pagamento</th><th>Status</th><th>Hora</th></tr></thead>
+          <tbody>
+            ${orders.slice(0,10).map(o => `
+              <tr>
+                <td>${o.customer_name || '—'}</td>
+                <td>${o.customer_phone || '—'}</td>
+                <td><b style="color:var(--gold)">R$${parseFloat(o.total||0).toFixed(2).replace('.',',')}</b></td>
+                <td>${o.delivery_type === 'delivery' ? '🛵 Entrega' : '🏪 Retirada'}</td>
+                <td>${{credit:'💳 Crédito',debit:'💳 Débito',pix:'📱 Pix',cash:'💵 Dinheiro'}[o.payment_method]||o.payment_method||'—'}</td>
+                <td><span class="badge ${o.status==='done'?'badge-green':o.status==='cancelled'?'badge-red':'badge-gold'}">${o.status||'pending'}</span></td>
+                <td style="color:var(--gray);font-size:12px">${o.created_at ? new Date(o.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+              </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:24px">Nenhum pedido ainda</td></tr>'}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  // PRODUCTS
+  products: async () => {
+    const [products, categories, subcategories] = await Promise.all([
+      api('/admin/products'), api('/admin/categories'), api('/admin/subcategories')
+    ]);
+    document.getElementById('page-content').innerHTML = `
+      <div class="section-card">
+        <div class="section-head">
+          <h3>🍽️ Produtos (${products.length})</h3>
+          <button class="btn-primary" onclick="openProductModal(null)">+ Novo Produto</button>
+        </div>
+        <table>
+          <thead><tr><th>Img</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>½+½</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            ${products.map(p => `
+              <tr>
+                <td>${p.image ? `<img src="${p.image}" style="width:40px;height:40px;border-radius:8px;object-fit:cover">` : '🍽️'}</td>
+                <td><b>${p.name}</b><br><span style="font-size:11px;color:var(--gray)">${(p.description||'').slice(0,40)}${p.description?.length>40?'...':''}</span></td>
+                <td>${p.category_name||'—'}${p.subcategory_name?`<br><span style="font-size:11px;color:var(--gray)">${p.subcategory_name}</span>`:''}</td>
+                <td><b style="color:var(--gold)">R$${parseFloat(p.price).toFixed(2).replace('.',',')}</b></td>
+                <td>${p.has_half_half ? '✅' : '—'}</td>
+                <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'Ativo':'Inativo'}</span></td>
+                <td>
+                  <button class="btn-primary btn-sm" onclick="openProductModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">✏️</button>
+                  <button class="btn-primary btn-sm btn-danger" onclick="deleteProduct(${p.id})" style="margin-left:4px">🗑</button>
+                </td>
+              </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:24px">Nenhum produto</td></tr>'}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  // CATEGORIES
+  categories: async () => {
+    const [cats, subcats] = await Promise.all([api('/admin/categories'), api('/admin/subcategories')]);
+    document.getElementById('page-content').innerHTML = `
+      <div class="section-card" style="margin-bottom:24px">
+        <div class="section-head">
+          <h3>📂 Categorias</h3>
+          <button class="btn-primary" onclick="openCategoryModal(null)">+ Nova Categoria</button>
+        </div>
+        <table>
+          <thead><tr><th>Ícone</th><th>Nome</th><th>Slug</th><th>Ordem</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            ${cats.map(c => `
+              <tr>
+                <td style="font-size:20px">${c.icon||'📁'}</td>
+                <td><b>${c.name}</b></td>
+                <td style="color:var(--gray);font-size:12px">${c.slug}</td>
+                <td>${c.sort_order}</td>
+                <td><span class="badge ${c.active?'badge-green':'badge-red'}">${c.active?'Ativo':'Inativo'}</span></td>
+                <td>
+                  <button class="btn-primary btn-sm" onclick="openCategoryModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">✏️</button>
+                  <button class="btn-primary btn-sm btn-danger" onclick="deleteCategory(${c.id})" style="margin-left:4px">🗑</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="section-card">
+        <div class="section-head">
+          <h3>📁 Subcategorias</h3>
+          <button class="btn-primary" onclick="openSubcategoryModal(null)">+ Nova Subcategoria</button>
+        </div>
+        <table>
+          <thead><tr><th>Nome</th><th>Categoria Pai</th><th>Slug</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            ${subcats.map(s => `
+              <tr>
+                <td><b>${s.name}</b></td>
+                <td>${s.category_name||'—'}</td>
+                <td style="color:var(--gray);font-size:12px">${s.slug}</td>
+                <td><span class="badge ${s.active?'badge-green':'badge-red'}">${s.active?'Ativo':'Inativo'}</span></td>
+                <td>
+                  <button class="btn-primary btn-sm" onclick="openSubcategoryModal(${JSON.stringify(s).replace(/"/g,'&quot;')})">✏️</button>
+                  <button class="btn-primary btn-sm btn-danger" onclick="deleteSubcategory(${s.id})" style="margin-left:4px">🗑</button>
+                </td>
+              </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:24px">Nenhuma subcategoria</td></tr>'}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  // BANNERS
+  banners: async () => {
+    const banners = await api('/admin/banners');
+    document.getElementById('page-content').innerHTML = `
+      <div class="section-card">
+        <div class="section-head">
+          <h3>🎯 Banners Promocionais</h3>
+          <button class="btn-primary" onclick="openBannerModal(null)">+ Novo Banner</button>
+        </div>
+        <table>
+          <thead><tr><th>Preview</th><th>Título</th><th>Subtítulo</th><th>Badge</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            ${banners.map(b => `
+              <tr>
+                <td><div style="width:80px;height:44px;border-radius:8px;background:linear-gradient(135deg,${b.color_from},${b.color_to});display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${b.badge||''}</div></td>
+                <td><b>${b.title}</b></td>
+                <td style="color:var(--gray);font-size:12px">${(b.subtitle||'').slice(0,40)}</td>
+                <td>${b.badge||'—'}</td>
+                <td><span class="badge ${b.active?'badge-green':'badge-red'}">${b.active?'Ativo':'Inativo'}</span></td>
+                <td>
+                  <button class="btn-primary btn-sm" onclick="openBannerModal(${JSON.stringify(b).replace(/"/g,'&quot;')})">✏️</button>
+                  <button class="btn-primary btn-sm btn-danger" onclick="deleteBanner(${b.id})" style="margin-left:4px">🗑</button>
+                </td>
+              </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:24px">Nenhum banner</td></tr>'}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  // ORDERS
+  orders: async () => {
+    const orders = await api('/admin/orders');
+    document.getElementById('page-content').innerHTML = `
+      <div class="section-card">
+        <div class="section-head"><h3>📋 Pedidos (${orders.length})</h3></div>
+        <table>
+          <thead><tr><th>#</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Tipo</th><th>Pagamento</th><th>Status</th><th>Data</th><th>Ação</th></tr></thead>
+          <tbody>
+            ${orders.map(o => {
+              const items = Array.isArray(o.items) ? o.items : [];
+              return `
+              <tr>
+                <td style="color:var(--gray)">#${o.id}</td>
+                <td><b>${o.customer_name||'—'}</b><br><span style="font-size:11px;color:var(--gray)">${o.customer_phone||''}</span></td>
+                <td class="order-items">${items.slice(0,3).map(i=>`${i.qty||1}x ${i.name}`).join('<br>')}${items.length>3?'...':''}</td>
+                <td><b style="color:var(--gold)">R$${parseFloat(o.total||0).toFixed(2).replace('.',',')}</b></td>
+                <td>${o.delivery_type==='delivery'?'🛵 Entrega':'🏪 Retirada'}</td>
+                <td style="font-size:12px">${{credit:'Crédito',debit:'Débito',pix:'Pix',cash:'Dinheiro'}[o.payment_method]||o.payment_method||'—'}</td>
+                <td>
+                  <select onchange="updateOrderStatus(${o.id}, this.value)" style="background:var(--dark3);color:white;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer">
+                    ${['pending','preparing','ready','delivered','cancelled'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${{pending:'⏳ Aguardando',preparing:'👨‍🍳 Preparando',ready:'✅ Pronto',delivered:'🚀 Entregue',cancelled:'❌ Cancelado'}[s]}</option>`).join('')}
+                  </select>
+                </td>
+                <td style="font-size:11px;color:var(--gray)">${o.created_at ? new Date(o.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+                <td>${o.delivery_type==='delivery'&&o.address_street?`<span style="font-size:11px;color:var(--gray)">${o.address_street}, ${o.address_number||''}<br>${o.address_neighborhood||''}</span>`:'—'}</td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:24px">Nenhum pedido</td></tr>'}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  // SETTINGS
+  settings: async () => {
+    const s = await api('/admin/settings');
+    document.getElementById('page-content').innerHTML = `
+      <div class="section-card">
+        <div class="section-head"><h3>⚙️ Configurações Gerais</h3></div>
+        <div style="padding:24px">
+          <div class="settings-grid">
+            <div class="form-group">
+              <label class="form-label">Nome do Restaurante</label>
+              <input class="form-input" id="s-name" value="${s.restaurant_name||''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">WhatsApp (com código do país)</label>
+              <input class="form-input" id="s-whatsapp" value="${s.whatsapp||''}" placeholder="5598912345678">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Horário de Funcionamento</label>
+              <input class="form-input" id="s-hours" value="${s.open_hours||''}" placeholder="18:00 - 23:00">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Pedido Mínimo (R$)</label>
+              <input class="form-input" id="s-min" type="number" value="${s.min_order||''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Endereço</label>
+              <input class="form-input" id="s-address" value="${s.address||''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status da Loja</label>
+              <div class="toggle-wrap" style="margin-top:8px">
+                <div class="toggle ${s.open==='1'?'on':''}" id="open-toggle" onclick="toggleOpen(this)">
+                  <div class="toggle-knob"></div>
+                </div>
+                <span id="open-label">${s.open==='1'?'🟢 Aberto':'🔴 Fechado'}</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="saveSettings()" style="margin-top:8px">💾 Salvar Configurações</button>
+        </div>
+      </div>`;
+  }
+};
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+let openStatus = null;
+
+function toggleOpen(el) {
+  el.classList.toggle('on');
+  openStatus = el.classList.contains('on');
+  document.getElementById('open-label').textContent = openStatus ? '🟢 Aberto' : '🔴 Fechado';
+}
+
+async function saveSettings() {
+  const open = document.getElementById('open-toggle').classList.contains('on');
+  await api('/admin/settings', 'PUT', {
+    restaurant_name: document.getElementById('s-name').value,
+    whatsapp: document.getElementById('s-whatsapp').value,
+    open_hours: document.getElementById('s-hours').value,
+    min_order: document.getElementById('s-min').value,
+    address: document.getElementById('s-address').value,
+    open: open ? '1' : '0',
+  });
+  alert('✅ Configurações salvas!');
+}
+
+// ─── PRODUCTS CRUD ────────────────────────────────────────────────────────────
+async function openProductModal(p) {
+  editingId = p?.id || null;
+  const [cats, subcats] = await Promise.all([api('/admin/categories'), api('/admin/subcategories')]);
+
+  openModal(`
+    <div class="modal-title">${p ? '✏️ Editar Produto' : '➕ Novo Produto'}</div>
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input class="form-input" id="p-name" value="${p?.name||''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <textarea class="form-textarea" id="p-desc">${p?.description||''}</textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Preço (R$)</label>
+        <input class="form-input" id="p-price" type="number" step="0.01" value="${p?.price||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ordem</label>
+        <input class="form-input" id="p-order" type="number" value="${p?.sort_order||0}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="p-cat" onchange="filterSubcats(this.value)">
+          ${cats.map(c => `<option value="${c.id}" ${p?.category_id==c.id?'selected':''}>${c.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subcategoria</label>
+        <select class="form-select" id="p-subcat">
+          <option value="">Nenhuma</option>
+          ${subcats.filter(s => !p || s.category_id == p.category_id).map(s => `<option value="${s.id}" ${p?.subcategory_id==s.id?'selected':''}>${s.name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ingredientes Removíveis (separados por vírgula)</label>
+      <input class="form-input" id="p-ingr" value="${p?.removable_ingredients||''}" placeholder="cebola,alho,tomate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Imagem</label>
+      <input class="form-input" id="p-img" type="file" accept="image/*" onchange="previewImg(this)">
+      ${p?.image ? `<img id="img-preview" src="${p.image}" class="img-preview" style="display:block">` : '<img id="img-preview" class="img-preview">'}
+    </div>
+    <div class="toggle-wrap" style="margin-bottom:16px">
+      <div class="toggle ${p?.has_half_half?'on':''}" id="t-half" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+      <span>Pizza Meio a Meio</span>
+    </div>
+    <div class="toggle-wrap" style="margin-bottom:16px">
+      <div class="toggle ${p?.active!==0?'on':''}" id="t-active" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+      <span>Produto Ativo</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary btn-sm btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveProduct()">💾 Salvar</button>
+    </div>`);
+}
+
+function filterSubcats(catId) {
+  api('/admin/subcategories').then(subcats => {
+    const sel = document.getElementById('p-subcat');
+    sel.innerHTML = '<option value="">Nenhuma</option>' +
+      subcats.filter(s => s.category_id == catId).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  });
+}
+
+function previewImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('img-preview');
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProduct() {
+  const fd = new FormData();
+  fd.append('name', document.getElementById('p-name').value);
+  fd.append('description', document.getElementById('p-desc').value);
+  fd.append('price', document.getElementById('p-price').value);
+  fd.append('category_id', document.getElementById('p-cat').value);
+  fd.append('subcategory_id', document.getElementById('p-subcat').value);
+  fd.append('removable_ingredients', document.getElementById('p-ingr').value);
+  fd.append('sort_order', document.getElementById('p-order').value);
+  fd.append('has_half_half', document.getElementById('t-half').classList.contains('on') ? '1' : '0');
+  fd.append('active', document.getElementById('t-active').classList.contains('on') ? '1' : '0');
+  const imgFile = document.getElementById('p-img').files[0];
+  if (imgFile) fd.append('image', imgFile);
+
+  const method = editingId ? 'PUT' : 'POST';
+  const path = editingId ? `/admin/products/${editingId}` : '/admin/products';
+  const res = await fetch('/api' + path, {
+    method, headers: { Authorization: 'Bearer ' + token }, body: fd
+  });
+  if (res.ok) { closeModal(); pages.products(); }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Excluir este produto?')) return;
+  await api(`/admin/products/${id}`, 'DELETE');
+  pages.products();
+}
+
+// ─── CATEGORIES CRUD ──────────────────────────────────────────────────────────
+function openCategoryModal(c) {
+  editingId = c?.id || null;
+  openModal(`
+    <div class="modal-title">${c ? '✏️ Editar Categoria' : '➕ Nova Categoria'}</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="c-name" value="${c?.name||''}"></div>
+      <div class="form-group"><label class="form-label">Ícone (emoji)</label><input class="form-input" id="c-icon" value="${c?.icon||''}" placeholder="🍕"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Slug</label><input class="form-input" id="c-slug" value="${c?.slug||''}" placeholder="pizzas"></div>
+      <div class="form-group"><label class="form-label">Ordem</label><input class="form-input" id="c-order" type="number" value="${c?.sort_order||0}"></div>
+    </div>
+    <div class="toggle-wrap" style="margin-bottom:16px">
+      <div class="toggle ${c?.active!==0?'on':''}" id="c-active" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+      <span>Ativo</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary btn-sm btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveCategory()">💾 Salvar</button>
+    </div>`);
+}
+
+async function saveCategory() {
+  const body = {
+    name: document.getElementById('c-name').value,
+    slug: document.getElementById('c-slug').value,
+    icon: document.getElementById('c-icon').value,
+    sort_order: document.getElementById('c-order').value,
+    active: document.getElementById('c-active').classList.contains('on'),
+  };
+  const path = editingId ? `/admin/categories/${editingId}` : '/admin/categories';
+  const method = editingId ? 'PUT' : 'POST';
+  await api(path, method, body);
+  closeModal(); pages.categories();
+}
+
+async function deleteCategory(id) {
+  if (!confirm('Excluir esta categoria?')) return;
+  await api(`/admin/categories/${id}`, 'DELETE');
+  pages.categories();
+}
+
+// ─── SUBCATEGORIES CRUD ───────────────────────────────────────────────────────
+async function openSubcategoryModal(s) {
+  editingId = s?.id || null;
+  const cats = await api('/admin/categories');
+  openModal(`
+    <div class="modal-title">${s ? '✏️ Editar Subcategoria' : '➕ Nova Subcategoria'}</div>
+    <div class="form-group">
+      <label class="form-label">Categoria Pai</label>
+      <select class="form-select" id="sc-cat">
+        ${cats.map(c => `<option value="${c.id}" ${s?.category_id==c.id?'selected':''}>${c.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="sc-name" value="${s?.name||''}"></div>
+      <div class="form-group"><label class="form-label">Slug</label><input class="form-input" id="sc-slug" value="${s?.slug||''}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Ordem</label><input class="form-input" id="sc-order" type="number" value="${s?.sort_order||0}"></div>
+    <div class="toggle-wrap" style="margin-bottom:16px">
+      <div class="toggle ${s?.active!==0?'on':''}" id="sc-active" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+      <span>Ativo</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary btn-sm btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveSubcategory()">💾 Salvar</button>
+    </div>`);
+}
+
+async function saveSubcategory() {
+  const body = {
+    category_id: document.getElementById('sc-cat').value,
+    name: document.getElementById('sc-name').value,
+    slug: document.getElementById('sc-slug').value,
+    sort_order: document.getElementById('sc-order').value,
+    active: document.getElementById('sc-active').classList.contains('on'),
+  };
+  const path = editingId ? `/admin/subcategories/${editingId}` : '/admin/subcategories';
+  await api(path, editingId ? 'PUT' : 'POST', body);
+  closeModal(); pages.categories();
+}
+
+async function deleteSubcategory(id) {
+  if (!confirm('Excluir esta subcategoria?')) return;
+  await api(`/admin/subcategories/${id}`, 'DELETE');
+  pages.categories();
+}
+
+// ─── BANNERS CRUD ─────────────────────────────────────────────────────────────
+function openBannerModal(b) {
+  editingId = b?.id || null;
+  openModal(`
+    <div class="modal-title">${b ? '✏️ Editar Banner' : '➕ Novo Banner'}</div>
+    <div class="form-group"><label class="form-label">Título</label><input class="form-input" id="b-title" value="${b?.title||''}"></div>
+    <div class="form-group"><label class="form-label">Subtítulo</label><input class="form-input" id="b-sub" value="${b?.subtitle||''}"></div>
+    <div class="form-group"><label class="form-label">Badge (emoji + texto)</label><input class="form-input" id="b-badge" value="${b?.badge||''}" placeholder="🔥 Promoção"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cor Início</label><input class="form-input" id="b-cf" type="color" value="${b?.color_from||'#8B0000'}" style="height:44px;cursor:pointer"></div>
+      <div class="form-group"><label class="form-label">Cor Fim</label><input class="form-input" id="b-ct" type="color" value="${b?.color_to||'#CC0000'}" style="height:44px;cursor:pointer"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Ordem</label><input class="form-input" id="b-order" type="number" value="${b?.sort_order||0}"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px">
+        <div class="toggle-wrap">
+          <div class="toggle ${b?.active!==0?'on':''}" id="b-active" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
+          <span>Ativo</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary btn-sm btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveBanner()">💾 Salvar</button>
+    </div>`);
+}
+
+async function saveBanner() {
+  const body = {
+    title: document.getElementById('b-title').value,
+    subtitle: document.getElementById('b-sub').value,
+    badge: document.getElementById('b-badge').value,
+    color_from: document.getElementById('b-cf').value,
+    color_to: document.getElementById('b-ct').value,
+    sort_order: document.getElementById('b-order').value,
+    active: document.getElementById('b-active').classList.contains('on'),
+  };
+  const path = editingId ? `/admin/banners/${editingId}` : '/admin/banners';
+  await api(path, editingId ? 'PUT' : 'POST', body);
+  closeModal(); pages.banners();
+}
+
+async function deleteBanner(id) {
+  if (!confirm('Excluir banner?')) return;
+  await api(`/admin/banners/${id}`, 'DELETE');
+  pages.banners();
+}
+
+// ─── ORDERS ───────────────────────────────────────────────────────────────────
+async function updateOrderStatus(id, status) {
+  await api(`/admin/orders/${id}/status`, 'PUT', { status });
+}
+
+// ─── AUTO LOGIN ───────────────────────────────────────────────────────────────
+if (token) {
+  fetch('/api/admin/settings', { headers: { Authorization: 'Bearer ' + token } })
+    .then(r => {
+      if (r.ok) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-main').style.display = 'flex';
+        document.getElementById('admin-main').style.flexDirection = 'column';
+        showPage('dashboard', document.querySelector('.nav-item'));
+      } else {
+        localStorage.removeItem('admin_token');
+        token = null;
+      }
+    }).catch(() => {});
+}
+</script>
+</body>
+</html>
