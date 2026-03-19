@@ -112,10 +112,10 @@ function createTables() {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id),
     FOREIGN KEY (subcategory_id) REFERENCES subcategories(id)
-  )\`);
+  )`);
 
   // Migration: add sizes_prices if upgrading from older schema
-  try { db.run(\`ALTER TABLE products ADD COLUMN sizes_prices TEXT\`); } catch(e) {}
+  try { db.run('ALTER TABLE products ADD COLUMN sizes_prices TEXT'); } catch(e) {}
 
   db.run(`CREATE TABLE IF NOT EXISTS banners (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
