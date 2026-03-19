@@ -529,6 +529,17 @@ const pages = {
         <div class="section-head"><h3>⚙️ Configurações Gerais</h3></div>
         <div style="padding:24px">
           <div class="settings-grid">
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Logo do Restaurante</label>
+              <input class="form-input" id="s-logo-file" type="file" accept="image/*" onchange="previewLogo(this)" style="padding:10px">
+              <div style="margin-top:10px;display:flex;align-items:center;gap:12px;">
+                ${s.logo_url ? `<img src="${s.logo_url}" style="width:60px;height:60px;border-radius:12px;object-fit:cover;border:1px solid rgba(212,175,55,.3)">` : ''}
+                <div>
+                  <div id="logo-preview-wrap"></div>
+                  <div style="font-size:11px;color:var(--gray);margin-top:4px">Recomendado: imagem quadrada, mín. 200×200px</div>
+                </div>
+              </div>
+            </div>
             <div class="form-group">
               <label class="form-label">Nome do Restaurante</label>
               <input class="form-input" id="s-name" value="${s.restaurant_name||'Gran Prime'}">
@@ -578,9 +589,38 @@ function toggleOpen(el) {
   document.getElementById('open-label').textContent = openStatus ? '🟢 Aberto' : '🔴 Fechado';
 }
 
+function previewLogo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wrap = document.getElementById('logo-preview-wrap');
+    wrap.innerHTML = `<img src="${e.target.result}" style="width:60px;height:60px;border-radius:12px;object-fit:cover;border:2px solid var(--gold)">`;
+  };
+  reader.readAsDataURL(file);
+}
+
 async function saveSettings() {
   const open = document.getElementById('open-toggle').classList.contains('on');
-  await api('/admin/settings', 'PUT', {
+
+  // Upload logo se tiver arquivo novo
+  let logoUrl = null;
+  const logoFile = document.getElementById('s-logo-file')?.files[0];
+  if (logoFile) {
+    const fd = new FormData();
+    fd.append('image', logoFile);
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: fd
+    });
+    if (res.ok) {
+      const data = await res.json();
+      logoUrl = data.url;
+    }
+  }
+
+  const body = {
     restaurant_name: document.getElementById('s-name').value,
     whatsapp: document.getElementById('s-whatsapp').value,
     open_hours: document.getElementById('s-hours').value,
@@ -588,7 +628,10 @@ async function saveSettings() {
     min_order: document.getElementById('s-min').value,
     address: document.getElementById('s-address').value,
     open: open ? '1' : '0',
-  });
+  };
+  if (logoUrl) body.logo_url = logoUrl;
+
+  await api('/admin/settings', 'PUT', body);
   alert('✅ Configurações salvas!');
 }
 

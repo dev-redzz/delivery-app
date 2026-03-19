@@ -171,6 +171,7 @@ function seedData() {
     address: 'Rua das Flores, 100 - Centro',
     min_order: '20',
     delivery_fee: '5',
+    logo_url: '',
   };
   for (const [key, value] of Object.entries(settings)) {
     const exists = get('SELECT key FROM settings WHERE key = ?', [key]);
