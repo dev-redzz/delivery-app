@@ -671,10 +671,7 @@ async function openProductModal(p) {
       <div style="font-size:11px;color:var(--gray);margin-top:10px">P=4 fatias · M=6 · G=8 · GG=10 · F=12 fatias</div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Ingredientes Removíveis (separados por vírgula)</label>
-      <input class="form-input" id="p-ingr" value="${p?.removable_ingredients||''}" placeholder="cebola,alho,tomate">
-    </div>
+
     <div class="form-group">
       <label class="form-label">Imagem</label>
       <input class="form-input" id="p-img" type="file" accept="image/*" onchange="previewImg(this)">
@@ -733,7 +730,6 @@ async function saveProduct() {
   fd.append('price', document.getElementById('p-price').value);
   fd.append('category_id', document.getElementById('p-cat').value);
   fd.append('subcategory_id', document.getElementById('p-subcat').value);
-  fd.append('removable_ingredients', document.getElementById('p-ingr').value);
   fd.append('sort_order', document.getElementById('p-order').value);
   fd.append('has_half_half', isHalf ? '1' : '0');
   fd.append('active', document.getElementById('t-active').classList.contains('on') ? '1' : '0');
