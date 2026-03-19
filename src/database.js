@@ -160,12 +160,13 @@ function seedData() {
 
   // Settings
   const settings = {
-    restaurant_name: 'Brasa & Pizza',
+    restaurant_name: 'Gran Prime - Churrascaria e Pizzaria',
     whatsapp: '5598912345678',
     open: '1',
     open_hours: '18:00 - 23:00',
     address: 'Rua das Flores, 100 - Centro',
     min_order: '20',
+    delivery_fee: '5',
   };
   for (const [key, value] of Object.entries(settings)) {
     const exists = get('SELECT key FROM settings WHERE key = ?', [key]);

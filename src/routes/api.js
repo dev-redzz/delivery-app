@@ -166,17 +166,20 @@ router.get('/admin/banners', authMiddleware, (req, res) => {
   res.json(all('SELECT * FROM banners ORDER BY sort_order'));
 });
 
-router.post('/admin/banners', authMiddleware, (req, res) => {
+router.post('/admin/banners', authMiddleware, upload.single('image'), (req, res) => {
   const { title, subtitle, badge, color_from, color_to, sort_order } = req.body;
-  run('INSERT INTO banners (title, subtitle, badge, color_from, color_to, sort_order) VALUES (?, ?, ?, ?, ?, ?)',
-    [title, subtitle, badge, color_from, color_to, sort_order || 0]);
+  const image = req.file ? `/uploads/${req.file.filename}` : null;
+  run('INSERT INTO banners (title, subtitle, badge, color_from, color_to, sort_order, image) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [title, subtitle, badge, color_from, color_to, sort_order || 0, image]);
   res.json({ success: true });
 });
 
-router.put('/admin/banners/:id', authMiddleware, (req, res) => {
+router.put('/admin/banners/:id', authMiddleware, upload.single('image'), (req, res) => {
   const { title, subtitle, badge, color_from, color_to, sort_order, active } = req.body;
-  run('UPDATE banners SET title=?, subtitle=?, badge=?, color_from=?, color_to=?, sort_order=?, active=? WHERE id=?',
-    [title, subtitle, badge, color_from, color_to, sort_order, active ? 1 : 0, req.params.id]);
+  const existing = get('SELECT image FROM banners WHERE id=?', [req.params.id]);
+  const image = req.file ? `/uploads/${req.file.filename}` : existing?.image;
+  run('UPDATE banners SET title=?, subtitle=?, badge=?, color_from=?, color_to=?, sort_order=?, active=?, image=? WHERE id=?',
+    [title, subtitle, badge, color_from, color_to, sort_order, active ? 1 : 0, image, req.params.id]);
   res.json({ success: true });
 });
 

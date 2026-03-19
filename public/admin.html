@@ -206,7 +206,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 <!-- Login -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">🔥 Brasa & Pizza</div>
+    <div class="login-logo">🔥 Gran Prime</div>
     <div class="login-sub">Painel Administrativo</div>
     <input class="login-input" id="login-email" type="email" placeholder="E-mail" value="admin@brasa.com">
     <input class="login-input" id="login-pass" type="password" placeholder="Senha" value="admin123">
@@ -218,7 +218,7 @@ tr:hover td{background:rgba(255,255,255,0.02);}
 <!-- Sidebar -->
 <nav id="sidebar">
   <div class="sidebar-logo">
-    Brasa & Pizza
+    Gran Prime
     <div class="sidebar-sub">Admin</div>
   </div>
   <div style="padding:12px 0;flex:1;">
@@ -531,7 +531,7 @@ const pages = {
           <div class="settings-grid">
             <div class="form-group">
               <label class="form-label">Nome do Restaurante</label>
-              <input class="form-input" id="s-name" value="${s.restaurant_name||''}">
+              <input class="form-input" id="s-name" value="${s.restaurant_name||'Gran Prime'}">
             </div>
             <div class="form-group">
               <label class="form-label">WhatsApp (com código do país)</label>
@@ -540,6 +540,10 @@ const pages = {
             <div class="form-group">
               <label class="form-label">Horário de Funcionamento</label>
               <input class="form-input" id="s-hours" value="${s.open_hours||''}" placeholder="18:00 - 23:00">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Taxa de Entrega (R$) — 0 para grátis</label>
+              <input class="form-input" id="s-fee" type="number" step="0.50" min="0" value="${s.delivery_fee||'0'}" placeholder="Ex: 5.00">
             </div>
             <div class="form-group">
               <label class="form-label">Pedido Mínimo (R$)</label>
@@ -580,6 +584,7 @@ async function saveSettings() {
     restaurant_name: document.getElementById('s-name').value,
     whatsapp: document.getElementById('s-whatsapp').value,
     open_hours: document.getElementById('s-hours').value,
+    delivery_fee: document.getElementById('s-fee').value,
     min_order: document.getElementById('s-min').value,
     address: document.getElementById('s-address').value,
     open: open ? '1' : '0',
@@ -795,6 +800,13 @@ function openBannerModal(b) {
     <div class="form-group"><label class="form-label">Título</label><input class="form-input" id="b-title" value="${b?.title||''}"></div>
     <div class="form-group"><label class="form-label">Subtítulo</label><input class="form-input" id="b-sub" value="${b?.subtitle||''}"></div>
     <div class="form-group"><label class="form-label">Badge (emoji + texto)</label><input class="form-input" id="b-badge" value="${b?.badge||''}" placeholder="🔥 Promoção"></div>
+    <div class="form-group">
+      <label class="form-label">Imagem do Banner (recomendado: 1200×400px)</label>
+      <input class="form-input" id="b-img" type="file" accept="image/*" onchange="previewBannerImg(this)" style="padding:10px">
+      ${b?.image ? `<img id="b-img-preview" src="${b.image}" style="width:100%;height:80px;object-fit:cover;border-radius:10px;margin-top:8px;">` : '<img id="b-img-preview" style="display:none;width:100%;height:80px;object-fit:cover;border-radius:10px;margin-top:8px;">'}
+      <div style="font-size:11px;color:var(--gray);margin-top:6px;">⚠️ Se enviar imagem, ela substitui o fundo colorido abaixo</div>
+    </div>
+    <div style="font-size:11px;color:var(--gray);margin-bottom:8px">Fundo de cor (usado quando não há imagem):</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Cor Início</label><input class="form-input" id="b-cf" type="color" value="${b?.color_from||'#8B0000'}" style="height:44px;cursor:pointer"></div>
       <div class="form-group"><label class="form-label">Cor Fim</label><input class="form-input" id="b-ct" type="color" value="${b?.color_to||'#CC0000'}" style="height:44px;cursor:pointer"></div>
@@ -814,19 +826,29 @@ function openBannerModal(b) {
     </div>`);
 }
 
+function previewBannerImg(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { const img = document.getElementById('b-img-preview'); img.src=e.target.result; img.style.display='block'; };
+  reader.readAsDataURL(file);
+}
+
 async function saveBanner() {
-  const body = {
-    title: document.getElementById('b-title').value,
-    subtitle: document.getElementById('b-sub').value,
-    badge: document.getElementById('b-badge').value,
-    color_from: document.getElementById('b-cf').value,
-    color_to: document.getElementById('b-ct').value,
-    sort_order: document.getElementById('b-order').value,
-    active: document.getElementById('b-active').classList.contains('on'),
-  };
+  const fd = new FormData();
+  fd.append('title', document.getElementById('b-title').value);
+  fd.append('subtitle', document.getElementById('b-sub').value);
+  fd.append('badge', document.getElementById('b-badge').value);
+  fd.append('color_from', document.getElementById('b-cf').value);
+  fd.append('color_to', document.getElementById('b-ct').value);
+  fd.append('sort_order', document.getElementById('b-order').value);
+  fd.append('active', document.getElementById('b-active').classList.contains('on') ? '1' : '0');
+  const imgFile = document.getElementById('b-img').files[0];
+  if (imgFile) fd.append('image', imgFile);
+
   const path = editingId ? `/admin/banners/${editingId}` : '/admin/banners';
-  await api(path, editingId ? 'PUT' : 'POST', body);
-  closeModal(); pages.banners();
+  const method = editingId ? 'PUT' : 'POST';
+  const res = await fetch('/api' + path, { method, headers: { Authorization: 'Bearer ' + token }, body: fd });
+  if (res.ok) { closeModal(); pages.banners(); }
 }
 
 async function deleteBanner(id) {
