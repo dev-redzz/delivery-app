@@ -363,12 +363,27 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,10,.97);backdrop-
 
 <script>
 const SIZES = [
-  {key:'P', label:'P', desc:'4 fatias',  mult:0.70},
-  {key:'M', label:'M', desc:'6 fatias',  mult:0.85},
-  {key:'G', label:'G', desc:'8 fatias',  mult:1.00},
-  {key:'GG',label:'GG',desc:'10 fatias', mult:1.20},
-  {key:'F', label:'F', desc:'12 fatias', mult:1.45},
+  {key:'P', label:'P', desc:'4 fatias'},
+  {key:'M', label:'M', desc:'6 fatias'},
+  {key:'G', label:'G', desc:'8 fatias'},
+  {key:'GG',label:'GG',desc:'10 fatias'},
+  {key:'F', label:'F', desc:'12 fatias'},
 ];
+
+// Returns price for a given size key from the product's sizes_prices JSON
+function getSizePrice(product, sizeKey) {
+  if (!product) return 0;
+  if (product.sizes_prices) {
+    try {
+      const sp = typeof product.sizes_prices === 'string'
+        ? JSON.parse(product.sizes_prices)
+        : product.sizes_prices;
+      if (sp[sizeKey] && parseFloat(sp[sizeKey]) > 0) return parseFloat(sp[sizeKey]);
+    } catch(e) {}
+  }
+  // Fallback: use base price (no sizes defined yet)
+  return parseFloat(product.price || 0);
+}
 
 let menuData=null, cart=JSON.parse(localStorage.getItem('cart')||'[]');
 let settings={}, currentModal=null, modalQty=1;
@@ -475,7 +490,7 @@ function renderMenu(menu) {
 
 function productCard(p) {
   const base = parseFloat(p.price);
-  const minPrice = p.has_half_half ? (base * SIZES[0].mult) : base;
+  const minPrice = p.has_half_half ? getSizePrice(p, 'P') : base;
   const priceLabel = p.has_half_half
     ? `A partir de R$${minPrice.toFixed(2).replace('.',',')}`
     : `R$${base.toFixed(2).replace('.',',')}`;
@@ -515,12 +530,14 @@ function openProduct(id) {
     <div class="size-section">
       <div class="modal-section-title">Tamanho</div>
       <div class="size-grid">
-        ${SIZES.map(s => `
-          <button class="size-btn ${s.key==='G'?'active':''}" onclick="selectSize('${s.key}',this)" data-key="${s.key}" data-mult="${s.mult}">
+        ${SIZES.map(s => {
+          const sp = getSizePrice(p, s.key);
+          return `<button class="size-btn ${s.key==='G'?'active':''}" onclick="selectSize('${s.key}',this)" data-key="${s.key}" data-price="${sp}">
             <span class="size-label">${s.label}</span>
             <span class="size-desc">${s.desc}</span>
-            <span class="size-price">R$${(base*s.mult).toFixed(2).replace('.',',')}</span>
-          </button>`).join('')}
+            <span class="size-price">${sp > 0 ? 'R$'+sp.toFixed(2).replace('.',',') : '—'}</span>
+          </button>`;
+        }).join('')}
       </div>
     </div>` : '';
 
@@ -588,12 +605,21 @@ function selectHalf(id, el) {
 }
 function getModalPrice() {
   if (!currentModal) return 0;
-  const base = parseFloat(currentModal.price);
   const isPizza = !!currentModal.has_half_half;
-  const mult = isPizza ? (SIZES.find(s=>s.key===selectedSize)?.mult||1) : 1;
-  let price = base;
-  if (isPizza && halfMode==='half' && halfSecond) price = (base + parseFloat(halfSecond.price)) / 2;
-  return price * mult;
+
+  if (!isPizza) return parseFloat(currentModal.price);
+
+  // Get price for selected size from the button's data-price attribute
+  const activeBtn = document.querySelector(`.size-btn[data-key="${selectedSize}"]`);
+  let sizePrice = activeBtn ? parseFloat(activeBtn.dataset.price || 0) : getSizePrice(currentModal, selectedSize);
+
+  if (halfMode === 'half' && halfSecond) {
+    // For half+half: average the two flavors' size price
+    const secondSizePrice = getSizePrice(halfSecond, selectedSize);
+    sizePrice = (sizePrice + secondSizePrice) / 2;
+  }
+
+  return sizePrice;
 }
 function updateModalPrice() {
   const p = getModalPrice();

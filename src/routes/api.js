@@ -134,20 +134,20 @@ router.get('/admin/products', authMiddleware, (req, res) => {
 });
 
 router.post('/admin/products', authMiddleware, upload.single('image'), (req, res) => {
-  const { category_id, subcategory_id, name, description, price, has_half_half, removable_ingredients, sort_order, active } = req.body;
+  const { category_id, subcategory_id, name, description, price, sizes_prices, has_half_half, removable_ingredients, sort_order, active } = req.body;
   const image = req.file ? `/uploads/${req.file.filename}` : null;
-  run(`INSERT INTO products (category_id, subcategory_id, name, description, price, image, has_half_half, removable_ingredients, sort_order, active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [category_id, subcategory_id || null, name, description, parseFloat(price), image, has_half_half ? 1 : 0, removable_ingredients, sort_order || 0, active !== '0' ? 1 : 0]);
+  run(`INSERT INTO products (category_id, subcategory_id, name, description, price, sizes_prices, image, has_half_half, removable_ingredients, sort_order, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [category_id, subcategory_id || null, name, description, parseFloat(price), sizes_prices || null, image, has_half_half ? 1 : 0, removable_ingredients, sort_order || 0, active !== '0' ? 1 : 0]);
   res.json({ success: true });
 });
 
 router.put('/admin/products/:id', authMiddleware, upload.single('image'), (req, res) => {
-  const { category_id, subcategory_id, name, description, price, has_half_half, removable_ingredients, sort_order, active } = req.body;
+  const { category_id, subcategory_id, name, description, price, sizes_prices, has_half_half, removable_ingredients, sort_order, active } = req.body;
   const existing = get('SELECT image FROM products WHERE id=?', [req.params.id]);
   const image = req.file ? `/uploads/${req.file.filename}` : existing?.image;
-  run(`UPDATE products SET category_id=?, subcategory_id=?, name=?, description=?, price=?, image=?, has_half_half=?, removable_ingredients=?, sort_order=?, active=? WHERE id=?`,
-    [category_id, subcategory_id || null, name, description, parseFloat(price), image, has_half_half ? 1 : 0, removable_ingredients, sort_order || 0, active !== '0' ? 1 : 0, req.params.id]);
+  run(`UPDATE products SET category_id=?, subcategory_id=?, name=?, description=?, price=?, sizes_prices=?, image=?, has_half_half=?, removable_ingredients=?, sort_order=?, active=? WHERE id=?`,
+    [category_id, subcategory_id || null, name, description, parseFloat(price), sizes_prices || null, image, has_half_half ? 1 : 0, removable_ingredients, sort_order || 0, active !== '0' ? 1 : 0, req.params.id]);
   res.json({ success: true });
 });
 

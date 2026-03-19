@@ -103,6 +103,7 @@ function createTables() {
     name TEXT NOT NULL,
     description TEXT,
     price REAL NOT NULL,
+    sizes_prices TEXT,
     image TEXT,
     active INTEGER DEFAULT 1,
     has_half_half INTEGER DEFAULT 0,
@@ -111,7 +112,10 @@ function createTables() {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id),
     FOREIGN KEY (subcategory_id) REFERENCES subcategories(id)
-  )`);
+  )\`);
+
+  // Migration: add sizes_prices if upgrading from older schema
+  try { db.run(\`ALTER TABLE products ADD COLUMN sizes_prices TEXT\`); } catch(e) {}
 
   db.run(`CREATE TABLE IF NOT EXISTS banners (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -249,9 +253,20 @@ function seedData() {
 
   for (const p of products) {
     if (!p.cat) continue;
-    db.run(`INSERT INTO products (category_id, subcategory_id, name, description, price, image, has_half_half, removable_ingredients)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [p.cat, p.sub || null, p.name, p.desc, p.price, p.img, p.half ? 1 : 0, p.ingr || null]);
+    // Default sizes_prices for pizzas: based on price with standard multipliers
+    let sizesPrices = null;
+    if (p.half) {
+      sizesPrices = JSON.stringify({
+        P:  parseFloat((p.price * 0.70).toFixed(2)),
+        M:  parseFloat((p.price * 0.85).toFixed(2)),
+        G:  parseFloat((p.price * 1.00).toFixed(2)),
+        GG: parseFloat((p.price * 1.20).toFixed(2)),
+        F:  parseFloat((p.price * 1.45).toFixed(2)),
+      });
+    }
+    db.run(`INSERT INTO products (category_id, subcategory_id, name, description, price, sizes_prices, image, has_half_half, removable_ingredients)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [p.cat, p.sub || null, p.name, p.desc, p.price, sizesPrices, p.img, p.half ? 1 : 0, p.ingr || null]);
   }
 
   // Banners

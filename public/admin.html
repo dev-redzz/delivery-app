@@ -597,6 +597,23 @@ async function openProductModal(p) {
   editingId = p?.id || null;
   const [cats, subcats] = await Promise.all([api('/admin/categories'), api('/admin/subcategories')]);
 
+  // Parse existing sizes_prices
+  let sp = { P: '', M: '', G: '', GG: '', F: '' };
+  if (p?.sizes_prices) {
+    try { sp = { ...sp, ...JSON.parse(p.sizes_prices) }; } catch(e) {}
+  } else if (p?.price && p?.has_half_half) {
+    // Generate defaults from price
+    sp = {
+      P:  (p.price * 0.70).toFixed(2),
+      M:  (p.price * 0.85).toFixed(2),
+      G:  (p.price * 1.00).toFixed(2),
+      GG: (p.price * 1.20).toFixed(2),
+      F:  (p.price * 1.45).toFixed(2),
+    };
+  }
+
+  const isPizza = p?.has_half_half;
+
   openModal(`
     <div class="modal-title">${p ? '✏️ Editar Produto' : '➕ Novo Produto'}</div>
     <div class="form-group">
@@ -609,8 +626,8 @@ async function openProductModal(p) {
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Preço (R$)</label>
-        <input class="form-input" id="p-price" type="number" step="0.01" value="${p?.price||''}">
+        <label class="form-label">Preço Base (R$)</label>
+        <input class="form-input" id="p-price" type="number" step="0.01" value="${p?.price||''}" placeholder="Preço padrão (G para pizza)">
       </div>
       <div class="form-group">
         <label class="form-label">Ordem</label>
@@ -620,7 +637,7 @@ async function openProductModal(p) {
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Categoria</label>
-        <select class="form-select" id="p-cat" onchange="filterSubcats(this.value)">
+        <select class="form-select" id="p-cat" onchange="filterSubcats(this.value); toggleSizeFields(this)">
           ${cats.map(c => `<option value="${c.id}" ${p?.category_id==c.id?'selected':''}>${c.name}</option>`).join('')}
         </select>
       </div>
@@ -632,6 +649,28 @@ async function openProductModal(p) {
         </select>
       </div>
     </div>
+
+    <!-- Toggle pizza meio a meio -->
+    <div class="toggle-wrap" style="margin-bottom:16px" id="half-toggle-wrap">
+      <div class="toggle ${isPizza?'on':''}" id="t-half" onclick="this.classList.toggle('on'); updateSizeVisibility()"><div class="toggle-knob"></div></div>
+      <span>🍕 Pizza com tamanhos (P/M/G/GG/F)</span>
+    </div>
+
+    <!-- Preços por tamanho — só aparece quando é pizza -->
+    <div id="sizes-fields" style="display:${isPizza?'block':'none'};margin-bottom:20px;background:var(--dark3);border-radius:12px;padding:16px;border:1px solid rgba(212,175,55,0.2)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:14px">💰 Preços por Tamanho (R$)</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+        ${['P','M','G','GG','F'].map(s => `
+          <div>
+            <label style="font-size:11px;color:var(--gray);display:block;text-align:center;margin-bottom:6px;font-weight:600">${s}</label>
+            <input class="form-input" id="sp-${s}" type="number" step="0.01" min="0"
+              value="${sp[s]||''}" placeholder="0,00"
+              style="text-align:center;padding:10px 6px;font-size:14px;font-weight:600">
+          </div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--gray);margin-top:10px">P=4 fatias · M=6 · G=8 · GG=10 · F=12 fatias</div>
+    </div>
+
     <div class="form-group">
       <label class="form-label">Ingredientes Removíveis (separados por vírgula)</label>
       <input class="form-input" id="p-ingr" value="${p?.removable_ingredients||''}" placeholder="cebola,alho,tomate">
@@ -640,10 +679,6 @@ async function openProductModal(p) {
       <label class="form-label">Imagem</label>
       <input class="form-input" id="p-img" type="file" accept="image/*" onchange="previewImg(this)">
       ${p?.image ? `<img id="img-preview" src="${p.image}" class="img-preview" style="display:block">` : '<img id="img-preview" class="img-preview">'}
-    </div>
-    <div class="toggle-wrap" style="margin-bottom:16px">
-      <div class="toggle ${p?.has_half_half?'on':''}" id="t-half" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
-      <span>Pizza Meio a Meio</span>
     </div>
     <div class="toggle-wrap" style="margin-bottom:16px">
       <div class="toggle ${p?.active!==0?'on':''}" id="t-active" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div>
@@ -655,12 +690,27 @@ async function openProductModal(p) {
     </div>`);
 }
 
+function updateSizeVisibility() {
+  const isHalf = document.getElementById('t-half')?.classList.contains('on');
+  const sf = document.getElementById('sizes-fields');
+  if (sf) sf.style.display = isHalf ? 'block' : 'none';
+}
+
 function filterSubcats(catId) {
   api('/admin/subcategories').then(subcats => {
     const sel = document.getElementById('p-subcat');
     sel.innerHTML = '<option value="">Nenhuma</option>' +
       subcats.filter(s => s.category_id == catId).map(s => `<option value="${s.id}">${s.name}</option>`).join('');
   });
+}
+
+function toggleSizeFields(sel) {
+  // auto-enable pizza toggle when category is pizza
+  const catName = sel.options[sel.selectedIndex]?.text || '';
+  if (catName.toLowerCase().includes('pizza')) {
+    document.getElementById('t-half')?.classList.add('on');
+    updateSizeVisibility();
+  }
 }
 
 function previewImg(input) {
@@ -676,6 +726,7 @@ function previewImg(input) {
 }
 
 async function saveProduct() {
+  const isHalf = document.getElementById('t-half').classList.contains('on');
   const fd = new FormData();
   fd.append('name', document.getElementById('p-name').value);
   fd.append('description', document.getElementById('p-desc').value);
@@ -684,8 +735,23 @@ async function saveProduct() {
   fd.append('subcategory_id', document.getElementById('p-subcat').value);
   fd.append('removable_ingredients', document.getElementById('p-ingr').value);
   fd.append('sort_order', document.getElementById('p-order').value);
-  fd.append('has_half_half', document.getElementById('t-half').classList.contains('on') ? '1' : '0');
+  fd.append('has_half_half', isHalf ? '1' : '0');
   fd.append('active', document.getElementById('t-active').classList.contains('on') ? '1' : '0');
+
+  // Collect sizes_prices if pizza
+  if (isHalf) {
+    const sizes = {};
+    let hasAny = false;
+    for (const s of ['P','M','G','GG','F']) {
+      const val = document.getElementById(`sp-${s}`)?.value;
+      if (val && parseFloat(val) > 0) { sizes[s] = parseFloat(parseFloat(val).toFixed(2)); hasAny = true; }
+    }
+    if (hasAny) fd.append('sizes_prices', JSON.stringify(sizes));
+    // Set price = G size if filled, else keep base
+    const gPrice = document.getElementById('sp-G')?.value;
+    if (gPrice && parseFloat(gPrice) > 0) fd.set('price', gPrice);
+  }
+
   const imgFile = document.getElementById('p-img').files[0];
   if (imgFile) fd.append('image', imgFile);
 
