@@ -293,11 +293,13 @@ header {
   font-family: 'Playfair Display', serif; font-size: 20px;
 }
 .close-cart-btn {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: var(--dark3); border: none; color: white;
-  font-size: 18px; cursor: pointer;
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(155,27,27,0.2); border: 1px solid rgba(155,27,27,0.4); color: #f87171;
+  font-size: 16px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; font-weight: 700;
 }
+.close-cart-btn:hover { background: var(--red); border-color:var(--red); color:white; }
 
 .cart-items { flex:1; overflow-y:auto; padding: 16px 24px; }
 .cart-empty {
@@ -553,17 +555,17 @@ header {
 @keyframes toastOut { to{opacity:0;transform:translateY(10px)} }
 .toast.out { animation:toastOut 0.3s ease forwards; }
 
-/* ─── LOADING ───────────────────────────────────────────────────────── */
-#loading {
-  position:fixed; inset:0; background:var(--black);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  z-index:1000;
+/* ─── OBS TEXTAREA ──────────────────────────────────────────────────── */
+.obs-textarea {
+  width:100%; padding:12px 14px;
+  background:var(--dark3); border:1px solid rgba(255,255,255,0.1);
+  border-radius:12px; color:white;
+  font-family:'DM Sans',sans-serif; font-size:13px;
+  resize:none; outline:none; min-height:80px;
+  transition:border-color 0.2s;
 }
-.loader-logo { font-family:'Playfair Display',serif; font-size:32px; font-weight:900; margin-bottom:20px; }
-.loader-logo span { background:linear-gradient(90deg,var(--red),var(--gold)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-.loader-bar { width:200px; height:3px; background:var(--dark3); border-radius:2px; overflow:hidden; }
-.loader-fill { height:100%; background:linear-gradient(90deg,var(--red),var(--gold)); animation:load 1.5s ease forwards; }
-@keyframes load { from{width:0} to{width:100%} }
+.obs-textarea:focus { border-color:var(--gold); }
+.obs-textarea::placeholder { color:var(--gray); }
 
 /* ─── RESPONSIVE ────────────────────────────────────────────────────── */
 @media(max-width:640px) {
@@ -580,12 +582,6 @@ header {
 </style>
 </head>
 <body>
-
-<!-- Loading -->
-<div id="loading">
-  <div class="loader-logo"><span>Brasa & Pizza</span></div>
-  <div class="loader-bar"><div class="loader-fill"></div></div>
-</div>
 
 <!-- Closed Banner -->
 <div id="closed-banner">🔒 Estamos fechados no momento — Horário: <span id="open-hours-text"></span></div>
@@ -765,11 +761,8 @@ async function init() {
     renderBanners(menuData.banners || []);
     renderMenu(menuData.menu || []);
     updateCart();
-    
-    setTimeout(() => document.getElementById('loading').style.display='none', 800);
   } catch(e) {
     console.error(e);
-    setTimeout(() => document.getElementById('loading').style.display='none', 800);
   }
 }
 
@@ -953,18 +946,15 @@ function openProduct(id) {
   }
 
   let ingrHTML = '';
-  if (ingredients.length) {
-    ingrHTML = `
+  const ingrPlaceholder = ingredients.length
+    ? `Ex: sem ${ingredients.join(', sem ')}`
+    : 'Ex: sem cebola, sem alho...';
+
+  ingrHTML = `
       <div style="margin-bottom:24px">
-        <div class="modal-section-title">Remover Ingredientes</div>
-        <div class="ingredients-list">
-          ${ingredients.map(ing => `
-            <div class="ingredient-tag" onclick="toggleIngredient('${ing.trim()}', this)">
-              <span class="tag-x">🥄</span> ${ing.trim()}
-            </div>`).join('')}
-        </div>
+        <div class="modal-section-title">Observações / Retirar Ingredientes</div>
+        <textarea class="obs-textarea" id="modal-obs" placeholder="${ingrPlaceholder}"></textarea>
       </div>`;
-  }
 
   document.getElementById('modal-content').innerHTML = `
     ${img}
@@ -1036,8 +1026,10 @@ function addToCartFromModal() {
     price = (price + parseFloat(halfSecond.price)) / 2;
     name = `½ ${currentModal.name} + ½ ${halfSecond.name}`;
   }
-  if (removedIngredients.length) {
-    note = 'Sem: ' + removedIngredients.join(', ');
+
+  const obsEl = document.getElementById('modal-obs');
+  if (obsEl && obsEl.value.trim()) {
+    note = obsEl.value.trim();
   }
 
   for (let i = 0; i < modalQty; i++) {
