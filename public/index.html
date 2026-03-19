@@ -58,20 +58,58 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,10,.97);backdrop-
   display:block;pointer-events:none;
 }
 .banner-slide-fallback{
-  width:100%;height:100%;
+  width:100%;height:100%;position:relative;overflow:hidden;
   background:linear-gradient(135deg,var(--from,#8B0000),var(--to,#CC0000));
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:12px;text-align:center;padding:32px;
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  padding:clamp(24px,5vw,52px);
 }
+/* fundo decorativo: círculos sobrepostos */
+.banner-slide-fallback::before{
+  content:'';position:absolute;
+  right:-80px;top:-80px;
+  width:340px;height:340px;border-radius:50%;
+  background:rgba(255,255,255,.06);pointer-events:none;
+}
+.banner-slide-fallback::after{
+  content:'';position:absolute;
+  right:40px;bottom:-100px;
+  width:220px;height:220px;border-radius:50%;
+  background:rgba(255,255,255,.04);pointer-events:none;
+}
+/* linha dourada lateral */
+.fb-line{
+  width:4px;height:100%;position:absolute;left:0;top:0;
+  background:linear-gradient(180deg,var(--gold),transparent);
+  border-radius:0 2px 2px 0;
+}
+.fb-inner{position:relative;z-index:1;display:flex;flex-direction:column;gap:10px;max-width:75%;}
 .fb-badge{
-  background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.3);
-  border-radius:20px;padding:5px 16px;font-size:13px;font-weight:700;
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(0,0,0,.30);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:30px;padding:5px 14px;
+  font-size:12px;font-weight:700;letter-spacing:.5px;
+  width:fit-content;
 }
 .fb-title{
   font-family:'Playfair Display',serif;
-  font-size:clamp(22px,5vw,38px);font-weight:900;line-height:1.1;
+  font-size:clamp(24px,4.5vw,44px);font-weight:900;line-height:1.05;
+  text-shadow:0 2px 12px rgba(0,0,0,.35);
 }
-.fb-sub{font-size:clamp(13px,2.5vw,16px);opacity:.85;}
+.fb-title em{
+  font-style:normal;
+  background:linear-gradient(90deg,var(--gold-light),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.fb-sub{
+  font-size:clamp(13px,2vw,16px);opacity:.88;line-height:1.5;
+  text-shadow:0 1px 6px rgba(0,0,0,.3);
+}
+.fb-divider{
+  width:48px;height:2px;
+  background:linear-gradient(90deg,var(--gold),rgba(212,175,55,0));
+  border-radius:1px;
+}
 
 /* setas */
 .carousel-arrow{
@@ -486,14 +524,19 @@ function renderBanners(banners) {
   const track = document.getElementById('carousel-track');
   const dots  = document.getElementById('carousel-dots');
   track.innerHTML = banners.map(b => {
-    if (b.image) {
-      return `<div class="banner-slide"><img src="${b.image}" alt="${b.title}" draggable="false"></div>`;
-    }
+    // Sempre renderiza com texto (bonito), imagem fica como fundo se existir
+    const bgStyle = b.image
+      ? `background:linear-gradient(135deg,rgba(0,0,0,.55),rgba(0,0,0,.3)),url(${b.image}) center/cover no-repeat`
+      : `--from:${b.color_from||'#8B0000'};--to:${b.color_to||'#CC0000'}`;
     return `<div class="banner-slide">
-      <div class="banner-slide-fallback" style="--from:${b.color_from||'#8B0000'};--to:${b.color_to||'#CC0000'}">
-        ${b.badge?`<div class="fb-badge">${b.badge}</div>`:''}
-        <div class="fb-title">${b.title}</div>
-        ${b.subtitle?`<div class="fb-sub">${b.subtitle}</div>`:''}
+      <div class="banner-slide-fallback" style="${bgStyle}">
+        <div class="fb-line"></div>
+        <div class="fb-inner">
+          ${b.badge?`<div class="fb-badge">${b.badge}</div>`:''}
+          <div class="fb-title">${b.title}</div>
+          <div class="fb-divider"></div>
+          ${b.subtitle?`<div class="fb-sub">${b.subtitle}</div>`:''}
+        </div>
       </div>
     </div>`;
   }).join('');
